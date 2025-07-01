@@ -5,7 +5,7 @@ use syn::{
     parse_macro_input,
 };
 
-#[proc_macro_derive(DialoguerParser, attributes(arg, prompt))]
+#[proc_macro_derive(DialoguerParser, attributes(arg, prompt, clap, command))]
 pub fn dialoguer_parser_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
@@ -50,10 +50,10 @@ pub fn dialoguer_parser_derive(input: TokenStream) -> TokenStream {
 
         quote! {
             let #name = opts.#name.unwrap_or_else(||{
-                dialoguer::Input::<#ty>::new()
-                    .wth_prompt(#prompt_text)
+                ::dialoguer::Input::<#ty>::new()
+                    .with_prompt(#prompt_text)
                     .interact_text()
-                    .unwrap();
+                    .unwrap()
             });
         }
     });
@@ -67,33 +67,32 @@ pub fn dialoguer_parser_derive(input: TokenStream) -> TokenStream {
 
     let output = quote! {
         // shadow struct
-        #[derive(clap::Parser)]
+        #[derive(::clap::Parser)]
         #(#clap_struct_attrs)*
         struct #shadow_struct_name {
-            #(#shadow_struct_fields)*
+            #(#shadow_struct_fields),*
         }
 
-        impl #shadow_struct_name {
+        impl #struct_name {
             pub fn parse() -> Self {
                 let opts = #shadow_struct_name::parse();
 
                 #(#field_prompters)*
 
                 Self {
-                    #(#field_inits)*
+                    #(#field_inits),*
                 }
             }
         }
 
     };
-
     return output.into();
 }
 
 fn is_clap_attr(attr: &Attribute) -> bool {
     if let Some(ident) = attr.path().get_ident() {
         let s = ident.to_string();
-        matches!(s.as_str(), "arg" | "clap" | "command")
+        matches!(s.as_str(), "arg" | "clap" | "command" | "doc")
     } else {
         false
     }

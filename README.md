@@ -8,16 +8,18 @@ It works like `#[derive(Parser)]` from `clap`, but automatically prompts the use
 
 ```rust
 use dialoguer_parser_derive::DialoguerParser;
+// Clap's macros need to be in scope
+use clap::{Parser, arg, command};
 
 #[derive(Debug, DialoguerParser)]
 #[command(name = "myapp", version = "1.0")]
 struct Cli {
     #[arg(short, long)]
-    #[prompt("What is your name?")]
+    #[prompt="What is your name?"]
     name: String,
 
     #[arg(short, long)]
-    #[prompt("How old are you?")]
+    #[prompt="How old are you?"]
     age: u32,
 }
 
@@ -41,5 +43,5 @@ You must import clap and dialoguer yourself. This crate only generates the glue 
 ## Limitations
 - Only works on structs with named fields (no tuple structs or enums)
 - All fields must be non-`Option<T>` — prompting is used instead of optional values
-- Prompts use dialoguer::Input (no support yet for password, select, confirm, etc)
+- Prompts use dialoguer::Input (no support yet for password, select, confirm, etc), so that implies that only single value fields 
 - This crate is very much experimental and was made for my personnal use so it's probably not working very well if not at all
