@@ -29,9 +29,11 @@ pub fn dialoguer_parser_derive(input: TokenStream) -> TokenStream {
         panic!("DialoguerParser only supports structs");
     };
 
+    // Booleans (flags) need to be supported differently, in clap's default behavior, if a flag is not specified, it defaults to false, but because we prompt any field that is not specified, flag do not work like intended, so we need to exclude them from being prompted
+
     // We split the fields into to groups:
     // - Fields without Option (ex: age: u32) => those will be prompted if missing
-    // - Fields with Option (ex: output_file: Option<String>) => those will be optional fields and not be prompted
+    // - Fields with Option (ex: output_file: Option<String>), or flag (booleans) => those will be optional fields and not be prompted
 
     let shadow_struct_fields = fields.iter().map(|f| {
         let name = &f.ident;
@@ -40,7 +42,7 @@ pub fn dialoguer_parser_derive(input: TokenStream) -> TokenStream {
         let clap_attrs: Vec<&Attribute> =
             f.attrs.iter().filter(|attr| is_clap_attr(attr)).collect();
 
-        if is_option_type(ty) {
+        if is_option_type(ty) || is_bool_type(ty) {
             // This fields is optional
             quote! {
                 #(#clap_attrs)*
@@ -59,7 +61,7 @@ pub fn dialoguer_parser_derive(input: TokenStream) -> TokenStream {
         let name = &f.ident;
         let ty = &f.ty;
 
-        if is_option_type(ty) {
+        if is_option_type(ty) || is_bool_type(ty) {
             // If the fields is optional, we don't prompt it
             quote! {
                 let #name = opts.#name;
@@ -127,6 +129,15 @@ fn is_option_type(ty: &Type) -> bool {
             // is type an Option and does it have arguments
             return last_seg.ident.to_string() == "Option"
                 && matches!(last_seg.arguments, PathArguments::AngleBracketed(_));
+        }
+    }
+    return false;
+}
+
+fn is_bool_type(ty: &Type) -> bool {
+    if let Type::Path(type_path) = ty {
+        if type_path.qself.is_none() && type_path.path.segments.len() == 1 {
+            return type_path.path.segments[0].ident == "bool";
         }
     }
     return false;

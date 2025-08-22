@@ -28,7 +28,7 @@ fn main() {
     println!("Hello {}, age {}", cli.name, cli.age);
 }
 ```
-If --name or --age is not passed via CLI, the user is prompted for it interactively.
+If --name or --age are not passed via CLI, the user is prompted for them interactively.
 
 See the `examples` directory for additional examples.
 
@@ -36,6 +36,9 @@ See the `examples` directory for additional examples.
 If a field's type is an `Option<T>`, it becomes an optional field, and its value will not be prompted if missing (like clap's default behavior).
 See `examples/optional_fields` for an example
 
+## Flags
+If a field is a flag (bool), prompting is disabled because clap's default behavior is to set flag to false if not specified.
+In a future update, it will be possible to enable prompting for those
 ## Required Dependencies
 In your project, add:
 ```Toml

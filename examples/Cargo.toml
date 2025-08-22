@@ -15,3 +15,7 @@ path = "basic/main.rs"
 [[bin]]
 name = "optional_fields"
 path = "optional_fields/main.rs"
+
+[[bin]]
+name = "flags"
+path = "flags/main.rs"
