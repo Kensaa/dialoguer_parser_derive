@@ -34,7 +34,7 @@ See the `examples` directory for additional examples.
 
 ## Optional fields
 If a field's type is an `Option<T>`, it becomes an optional field, and its value will not be prompted if missing (like clap's default behavior).
-See `examples/optional_fields` for an example
+See `examples/optional_fields.rs` for an example
 
 ## Flags
 If a field is a flag (bool), prompting is disabled because clap's default behavior is to set flag to false if not specified.
