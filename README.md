@@ -30,6 +30,12 @@ fn main() {
 ```
 If --name or --age is not passed via CLI, the user is prompted for it interactively.
 
+See the `examples` directory for additional examples.
+
+## Optional fields
+If a field's type is an `Option<T>`, it becomes an optional field, and its value will not be prompted if missing (like clap's default behavior).
+See `examples/optional_fields` for an example
+
 ## Required Dependencies
 In your project, add:
 ```Toml
@@ -42,6 +48,5 @@ You must import clap and dialoguer yourself. This crate only generates the glue 
 
 ## Limitations
 - Only works on structs with named fields (no tuple structs or enums)
-- All fields must be non-`Option<T>` — prompting is used instead of optional values
-- Prompts use dialoguer::Input (no support yet for password, select, confirm, etc), so that implies that only single value fields 
+- Prompts use dialoguer::Input (no support yet for password, select, confirm, etc), so that implies that only single value fields are supported
 - This crate is very much experimental and was made for my personnal use so it's probably not working very well if not at all

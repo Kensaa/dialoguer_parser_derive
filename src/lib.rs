@@ -1,8 +1,8 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
-    Attribute, Data, DeriveInput, Expr, ExprLit, Fields, Lit, Meta, MetaNameValue,
-    parse_macro_input,
+    parse_macro_input, Attribute, Data, DeriveInput, Expr, ExprLit, Fields, Lit, Meta,
+    MetaNameValue, PathArguments, Type,
 };
 
 #[proc_macro_derive(DialoguerParser, attributes(arg, prompt, clap, command))]
@@ -29,15 +29,29 @@ pub fn dialoguer_parser_derive(input: TokenStream) -> TokenStream {
         panic!("DialoguerParser only supports structs");
     };
 
+    // We split the fields into to groups:
+    // - Fields without Option (ex: age: u32) => those will be prompted if missing
+    // - Fields with Option (ex: output_file: Option<String>) => those will be optional fields and not be prompted
+
     let shadow_struct_fields = fields.iter().map(|f| {
         let name = &f.ident;
         let ty = &f.ty;
 
         let clap_attrs: Vec<&Attribute> =
             f.attrs.iter().filter(|attr| is_clap_attr(attr)).collect();
-        quote! {
-            #(#clap_attrs)*
-            #name: Option<#ty>
+
+        if is_option_type(ty) {
+            // This fields is optional
+            quote! {
+                #(#clap_attrs)*
+                #name: #ty
+            }
+        } else {
+            // This field is required
+            quote! {
+                #(#clap_attrs)*
+                #name: Option<#ty>
+            }
         }
     });
 
@@ -45,16 +59,24 @@ pub fn dialoguer_parser_derive(input: TokenStream) -> TokenStream {
         let name = &f.ident;
         let ty = &f.ty;
 
-        let prompt_text =
-            get_prompt(&f.attrs).unwrap_or_else(|| format!("Enter {}", name.as_ref().unwrap()));
+        if is_option_type(ty) {
+            // If the fields is optional, we don't prompt it
+            quote! {
+                let #name = opts.#name;
+            }
+        } else {
+            // If the fields is required, we prompt it
+            let prompt_text =
+                get_prompt(&f.attrs).unwrap_or_else(|| format!("Enter {}", name.as_ref().unwrap()));
 
-        quote! {
-            let #name = opts.#name.unwrap_or_else(||{
-                ::dialoguer::Input::<#ty>::new()
-                    .with_prompt(#prompt_text)
-                    .interact_text()
-                    .unwrap()
-            });
+            quote! {
+                let #name = opts.#name.unwrap_or_else(||{
+                    ::dialoguer::Input::<#ty>::new()
+                        .with_prompt(#prompt_text)
+                        .interact_text()
+                        .unwrap()
+                });
+            }
         }
     });
 
@@ -96,6 +118,18 @@ fn is_clap_attr(attr: &Attribute) -> bool {
     } else {
         false
     }
+}
+
+/// Checks if a type is an Option<T>
+fn is_option_type(ty: &Type) -> bool {
+    if let Type::Path(path_type) = ty {
+        if let Some(last_seg) = path_type.path.segments.last() {
+            // is type an Option and does it have arguments
+            return last_seg.ident.to_string() == "Option"
+                && matches!(last_seg.arguments, PathArguments::AngleBracketed(_));
+        }
+    }
+    return false;
 }
 
 fn get_prompt(attrs: &[Attribute]) -> Option<String> {
